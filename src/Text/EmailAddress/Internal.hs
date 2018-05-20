@@ -47,6 +47,8 @@ import Text.Read (Read(readPrec), ReadPrec)
 import Web.HttpApiData
     ( FromHttpApiData(parseUrlPiece), ToHttpApiData(toUrlPiece) )
 import Web.PathPieces (PathPiece(fromPathPiece, toPathPiece))
+import Test.QuickCheck (Arbitrary (..))
+import Test.QuickCheck.Gen (listOf, elements)
 
 import qualified Text.Email.Validate as EmailValidate
 
@@ -55,6 +57,15 @@ import qualified Text.Email.Validate as EmailValidate
 newtype EmailAddress = EmailAddress
     { unEmailAddress :: EmailValidate.EmailAddress }
     deriving (Data, Eq, Generic, Ord, Typeable)
+
+instance Arbitrary EmailAddress where
+    arbitrary = do
+      user <- listOf arbitraryAlpha
+      host <- listOf arbitraryAlpha
+      case emailAddressFromString (user ++ "@" ++ host ++ ".com") of
+        Just e -> pure e
+      where
+        arbitraryAlpha = elements ['a'..'z']
 
 instance Default Constant EmailAddress (Column PGText) where
     def :: Constant EmailAddress (Column PGText)
