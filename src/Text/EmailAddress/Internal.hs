@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE DataKinds #-}
 
 module Text.EmailAddress.Internal
     ( EmailAddress(EmailAddress, unEmailAddress)
@@ -48,7 +49,8 @@ import Web.HttpApiData
     ( FromHttpApiData(parseUrlPiece), ToHttpApiData(toUrlPiece) )
 import Web.PathPieces (PathPiece(fromPathPiece, toPathPiece))
 import Test.QuickCheck (Arbitrary (..))
-import Test.QuickCheck.Gen (listOf1, elements)
+import Test.QuickCheck.Gen (Gen, elements)
+import Test.QuickCheck.Combinators (Between (..))
 
 import qualified Text.Email.Validate as EmailValidate
 
@@ -58,14 +60,22 @@ newtype EmailAddress = EmailAddress
     { unEmailAddress :: EmailValidate.EmailAddress }
     deriving (Data, Eq, Generic, Ord, Typeable)
 
+
+newtype Alpha = Alpha { getAlpha :: Char }
+  deriving (Eq, Show, Ord)
+
+instance Arbitrary Alpha where
+  arbitrary = Alpha <$> elements ['a'..'z']
+
+
 instance Arbitrary EmailAddress where
     arbitrary = do
-      user <- listOf1 arbitraryAlpha
-      host <- listOf1 arbitraryAlpha
-      case emailAddressFromString (user ++ "@" ++ host ++ ".com") of
+      Between user <- arbitrary :: Gen (Between 1 10 [] Alpha)
+      Between host <- arbitrary :: Gen (Between 1 10 [] Alpha)
+      let s = map getAlpha user ++ "@" ++ map getAlpha host ++ ".com"
+      case emailAddressFromString s of
         Just e -> pure e
-      where
-        arbitraryAlpha = elements ['a'..'z']
+        Nothing -> error s
 
 instance Default Constant EmailAddress (Column PGText) where
     def :: Constant EmailAddress (Column PGText)
