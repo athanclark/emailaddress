@@ -48,7 +48,7 @@ import Web.HttpApiData
     ( FromHttpApiData(parseUrlPiece), ToHttpApiData(toUrlPiece) )
 import Web.PathPieces (PathPiece(fromPathPiece, toPathPiece))
 import Test.QuickCheck (Arbitrary (..))
-import Test.QuickCheck.Gen (listOf, elements)
+import Test.QuickCheck.Gen (listOf1, elements)
 
 import qualified Text.Email.Validate as EmailValidate
 
@@ -60,8 +60,8 @@ newtype EmailAddress = EmailAddress
 
 instance Arbitrary EmailAddress where
     arbitrary = do
-      user <- listOf arbitraryAlpha
-      host <- listOf arbitraryAlpha
+      user <- listOf1 arbitraryAlpha
+      host <- listOf1 arbitraryAlpha
       case emailAddressFromString (user ++ "@" ++ host ++ ".com") of
         Just e -> pure e
       where
